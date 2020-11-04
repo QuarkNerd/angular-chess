@@ -7,7 +7,8 @@ import { Component, OnInit, Input } from '@angular/core';
 })
 export class BoardSquareComponent implements OnInit {
   @Input() isDark: Boolean;
-
+  @Input() piece: string;
+  
   constructor() { }
 
   ngOnInit(): void {
