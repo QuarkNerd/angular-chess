@@ -7,9 +7,18 @@ import { Component, OnInit } from '@angular/core';
 })
 export class BoardComponent implements OnInit {
 
-  constructor() { }
+  numColumns: number;
+  numRows: number;
+  
+  constructor() {
+    this.numColumns = 8;
+    this.numRows = 8;
+   }
 
   ngOnInit(): void {
   }
 
+  counter(i: number) {
+    return new Array(i);
+}
 }

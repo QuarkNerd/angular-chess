@@ -1,1 +1,5 @@
-<p>board works!</p>
+<div class="board">
+    <div *ngFor="let e of counter(numColumns); let col = index;">
+        <app-board-square *ngFor="let e of counter(numRows); let row = index;" [isDark]="(col+row)%2"></app-board-square>
+    </div>
+</div>

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Input } from '@angular/core';
 
 @Component({
   selector: 'app-board-square',
@@ -6,6 +6,7 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./board-square.component.css']
 })
 export class BoardSquareComponent implements OnInit {
+  @Input() isDark: Boolean;
 
   constructor() { }
 
@@ -13,3 +14,5 @@ export class BoardSquareComponent implements OnInit {
   }
 
 }
+
+
