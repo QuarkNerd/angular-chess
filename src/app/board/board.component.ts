@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Input } from '@angular/core';
+import Game from '../games/chess';
 
 @Component({
   selector: 'app-board',
@@ -6,19 +7,14 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./board.component.css']
 })
 export class BoardComponent implements OnInit {
-
-  numColumns: number;
-  numRows: number;
+  @Input() game: Game;
   
-  constructor() {
-    this.numColumns = 8;
-    this.numRows = 8;
-   }
+  constructor() {}
 
   ngOnInit(): void {
   }
 
-  counter(i: number) {
-    return new Array(i);
-}
+  getFileName(piece: string) {
+    return piece ? this.game.name + '/' + piece + '.png' : '' ;
+  }
 }
