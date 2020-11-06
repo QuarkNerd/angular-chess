@@ -2,13 +2,13 @@ import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 
 import { AppComponent } from './app.component';
-import { BoardComponent } from './board/board.component';
+import { PlaySpaceComponent } from './play-space/play-space.component';
 import { BoardSquareComponent } from './board-square/board-square.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    BoardComponent,
+    PlaySpaceComponent,
     BoardSquareComponent
   ],
   imports: [

@@ -2,11 +2,11 @@ import { Component, OnInit, Input } from '@angular/core';
 import Game from '../games/chess';
 
 @Component({
-  selector: 'app-board',
-  templateUrl: './board.component.html',
-  styleUrls: ['./board.component.css']
+  selector: 'app-play-space',
+  templateUrl: './play-space.component.html',
+  styleUrls: ['./play-space.component.css']
 })
-export class BoardComponent implements OnInit {
+export class PlaySpaceComponent implements OnInit {
   @Input() game: Game;
   
   constructor() {}
