@@ -14,6 +14,12 @@ export class BoardSquareComponent implements OnInit {
   ngOnInit(): void {
   }
 
+  dragstart_handler(ev: any)
+  {
+    console.log(ev);
+    ev.dataTransfer.setData("text", ev.target.id)
+  }
+
 }
 
 
