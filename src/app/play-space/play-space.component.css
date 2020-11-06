@@ -1,6 +1,12 @@
+.main {
+    display: flex;
+    align-items: center;
+}
+
 .board {
     display: flex;
     flex-direction: column-reverse;
+    padding: 5px;
 }
 
 .row {

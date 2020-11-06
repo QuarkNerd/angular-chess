@@ -1,5 +1,8 @@
+import { type } from 'os';
+
+type Board =  string[][];
+
 export default interface Game {
     name: string;
-    board: string[][]
-    
+    boards: Board[]
 }

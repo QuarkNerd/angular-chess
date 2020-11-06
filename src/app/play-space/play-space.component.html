@@ -1,5 +1,7 @@
-<div class="board">
-    <div class="row" *ngFor="let row of game.board; let rowInd = index;">
-        <app-board-square *ngFor="let piece of row; let colInd = index;" [isDark]="(colInd+rowInd+1)%2" [piece]="getFileName(piece)"></app-board-square>
+<div class="main">
+    <div class="board" *ngFor="let board of game.boards; let rowInd = index;">
+        <div class="row" *ngFor="let row of board; let rowInd = index;">
+            <app-board-square *ngFor="let piece of row; let colInd = index;" [isDark]="(colInd+rowInd+1)%2" [piece]="getFileName(piece)"></app-board-square>
+        </div>
     </div>
 </div>
