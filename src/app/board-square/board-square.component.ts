@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter  } from '@angular/core';
 
 @Component({
   selector: 'app-board-square',
@@ -8,18 +8,28 @@ import { Component, OnInit, Input } from '@angular/core';
 export class BoardSquareComponent implements OnInit {
   @Input() isDark: Boolean;
   @Input() piece: string;
-  
+  @Input() squareId: string;
+
+  @Output() moveStartEvent = new EventEmitter<string>();
+  @Output() moveEndEvent = new EventEmitter<string>();
+
   constructor() { }
 
   ngOnInit(): void {
   }
 
-  dragstart_handler(ev: any)
-  {
-    console.log(ev);
-    ev.dataTransfer.setData("text", ev.target.id)
+  onDragStart() {
+    this.moveStartEvent.emit(this.squareId);
   }
 
+  allowDrop(event: Event) {
+    event.preventDefault();
+  }
+
+
+  onDrop() {
+    this.moveEndEvent.emit(this.squareId);
+  }
 }
 
 

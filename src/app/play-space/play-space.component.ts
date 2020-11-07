@@ -8,13 +8,22 @@ import Game from '../games/chess';
 })
 export class PlaySpaceComponent implements OnInit {
   @Input() game: Game;
-  
-  constructor() {}
+  currentFrom: string = null;
+
+  constructor() { }
 
   ngOnInit(): void {
   }
 
   getFileName(piece: string) {
     return piece ? this.game.name + '/' + piece + '.png' : '' ;
+  }
+
+  onMoveStart(squareId: string) {
+    this.currentFrom = squareId;
+  }
+
+  onMoveEnd(squareId: string) {
+    console.log(this.currentFrom, squareId);
   }
 }

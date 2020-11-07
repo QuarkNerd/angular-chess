@@ -1,3 +1,3 @@
-<div class="square square-{{isDark ? 'dark' : 'light'}}">
- <img *ngIf="piece" src="../../assets/{{piece}}" class="square-piece">
+<div (dragover)="allowDrop($event)" (drop)="onDrop()" class="square square-{{isDark ? 'dark' : 'light'}}">
+<img *ngIf="piece" src="../../assets/{{piece}}" draggable="true" (dragstart)="onDragStart()" class="square-piece">
 </div>

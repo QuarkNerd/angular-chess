@@ -1,7 +1,7 @@
 <div class="main">
-    <div class="board" *ngFor="let board of game.boards; let rowInd = index;">
+    <div class="board" *ngFor="let board of game.boards; let boardInd = index;">
         <div class="row" *ngFor="let row of board; let rowInd = index;">
-            <app-board-square *ngFor="let piece of row; let colInd = index;" [isDark]="(colInd+rowInd+1)%2" [piece]="getFileName(piece)"></app-board-square>
+            <app-board-square *ngFor="let piece of row; let colInd = index;" (moveEndEvent)="onMoveEnd($event)" (moveStartEvent)="onMoveStart($event)" [squareId]=" boardInd + '-' + rowInd + '-' + colInd" [isDark]="(colInd+rowInd+1)%2" [piece]="getFileName(piece)"></app-board-square>
         </div>
     </div>
 </div>
