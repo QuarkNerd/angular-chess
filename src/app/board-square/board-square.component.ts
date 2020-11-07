@@ -13,6 +13,9 @@ export class BoardSquareComponent implements OnInit {
   @Output() moveStartEvent = new EventEmitter<string>();
   @Output() moveEndEvent = new EventEmitter<string>();
 
+  isBeingDragged: Boolean = false;
+  hoveredOverRefCounter: number = 0;
+
   constructor() { }
 
   ngOnInit(): void {
@@ -20,16 +23,30 @@ export class BoardSquareComponent implements OnInit {
 
   onDragStart() {
     this.moveStartEvent.emit(this.squareId);
+    this.isBeingDragged = true;
+  }
+
+  onDragEnd() {
+    this.isBeingDragged = false;
   }
 
   allowDrop(event: Event) {
     event.preventDefault();
   }
 
-
   onDrop() {
+    this.hoveredOverRefCounter = 0;
     this.moveEndEvent.emit(this.squareId);
   }
+
+  onDragEnter() {
+    this.hoveredOverRefCounter += 1;
+  }
+
+  onDragLeave() {
+    this.hoveredOverRefCounter -= 1;
+  }
+
 }
 
 

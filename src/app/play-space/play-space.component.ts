@@ -24,9 +24,11 @@ export class PlaySpaceComponent implements OnInit {
   }
 
   onMoveEnd(squareId: string) {
-    this.game.giveNextMove({
-      from: this.currentFrom,
-      to: squareId
-    })
+    if (squareId !== this.currentFrom) {
+      this.game.giveNextMove({
+        from: this.currentFrom,
+        to: squareId
+      })
+    }
   }
 }

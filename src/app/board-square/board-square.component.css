@@ -1,17 +1,24 @@
 .square {
     height: 40px;
     width: 40px;
-}
-
-.square-light {
     background-color: #ebebd0;
 }
 
-.square-dark {
+.square.isDark {
     background-color: #779455;
+}
+
+.square.isHoveredOver {
+    background-color: yellow;
+    border: 2px solid orange;
+    box-sizing: border-box;
 }
 
 .square-piece {
     max-width:100%;
     max-height:100%;
+}
+
+.square-piece-dragged {
+    opacity: 0.5;
 }
