@@ -1,5 +1,5 @@
 import { Component, OnInit, Input } from '@angular/core';
-import Game from '../games/chess';
+import  { Game } from '../types';
 
 @Component({
   selector: 'app-play-space',
@@ -24,6 +24,9 @@ export class PlaySpaceComponent implements OnInit {
   }
 
   onMoveEnd(squareId: string) {
-    console.log(this.currentFrom, squareId);
+    this.game.giveNextMove({
+      from: this.currentFrom,
+      to: squareId
+    })
   }
 }

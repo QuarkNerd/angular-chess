@@ -1,4 +1,5 @@
-import Game from './game';
+import { parse } from 'path';
+import { Game, Move }  from '../types';
 
 export default class Chess implements Game {
     name: string = "chess";
@@ -22,5 +23,34 @@ export default class Chess implements Game {
                 ["b-r" ,"b-kn" ,"b-b" ,"b-q" ],
             ]
         ];
+    }
+
+    giveNextMove(move: Move) {
+        console.log(move)
+        const FROM_POS = this.stringPositionToArray(move.from);
+        const TO_POS = this.stringPositionToArray(move.to);
+        const PIECE = this.getPieceAt(FROM_POS);
+
+        if (FROM_POS[0] === 0) {
+            this.setPieceAt(FROM_POS, "");
+        }
+
+        if (TO_POS[0] === 0) {
+            this.setPieceAt(TO_POS, PIECE);
+        }
+
+    }
+
+    private stringPositionToArray(pos: string): number[] {
+        return pos.split('-').map(a => parseInt(a));
+    }
+
+    private getPieceAt(pos: number[]): string {
+        return this.boards[pos[0]][pos[1]][pos[2]]
+    }
+
+    private setPieceAt(pos: number[], piece: string) {
+        console.log(pos, piece)
+        this.boards[pos[0]][pos[1]][pos[2]] = piece;
     }
 }
