@@ -40,8 +40,14 @@ export default class Chess implements Game {
         const [ TARGET_PLAYER, TARGET_PIECE_TYPE ] = TARGET_PIECE.split("-");
 
         // basic validation here
+        if ( MOVING_PLAYER !== this.nextPlayer ||
+              TO_BOARD === 1) return;
 
         if (this.isTimeToPromote) {
+            if (FROM_BOARD !== 1 || TARGET_PIECE_TYPE !== "p" || TARGET_PLAYER !== this.nextPlayer) return;
+
+            this.setPieceAtMainBoard(TO_Y, TO_X, MOVING_PIECE);
+            this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
             this.isTimeToPromote = false;
             return;
         }
@@ -50,10 +56,8 @@ export default class Chess implements Game {
 
         //castling here maybe??
 
-        if ( MOVING_PLAYER !== this.nextPlayer ||
-             TARGET_PLAYER === this.nextPlayer ||
-             FROM_BOARD === 1                  ||
-             TO_BOARD === 1
+        if ( TARGET_PLAYER === this.nextPlayer ||
+             FROM_BOARD === 1                  
             ) return;
         
         const DIFF_X = TO_X - FROM_X;
@@ -102,8 +106,6 @@ export default class Chess implements Game {
                 break;
         }
 
-        // define promnotion here, so the rest can be abstracted
-
         this.setPieceAtMainBoard(TO_Y, TO_X, MOVING_PIECE);
         this.setPieceAtMainBoard(FROM_Y, FROM_X, "");
         // if (FROM_POS[0] === 0) {
@@ -113,6 +115,11 @@ export default class Chess implements Game {
         // if (TO_POS[0] === 0) {
         // }
 
+
+        if (MOVING_PIECE_TYPE === "p" && (TO_Y === 0 || TO_Y === 7)) {
+            this.isTimeToPromote = true;
+            return;
+        } 
         this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
     }
 
