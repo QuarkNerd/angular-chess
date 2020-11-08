@@ -90,16 +90,16 @@ export default class Chess implements Game {
                 break;
             case "r":
                 if (ABS_DIFF_X !== 0 && ABS_DIFF_Y !== 0) return;
-                // pieces in middle
+                if (!this.areSpacesBetweenEmpty(FROM_X, FROM_Y, TO_X, TO_Y)) return;
                 break;
             case "b":
                 if (ABS_DIFF_X !== ABS_DIFF_Y) return;
-                // pieces in middle
+                if (!this.areSpacesBetweenEmpty(FROM_X, FROM_Y, TO_X, TO_Y)) return;
                 break;
             case "q":
                 if (ABS_DIFF_X !== 0 && ABS_DIFF_Y !== 0 && ABS_DIFF_X !== ABS_DIFF_Y) return;
+                if (!this.areSpacesBetweenEmpty(FROM_X, FROM_Y, TO_X, TO_Y)) return;
                 break;
-                // pieces in middle
         }
 
         // define promnotion here, so the rest can be abstracted
@@ -114,6 +114,24 @@ export default class Chess implements Game {
         // }
 
         this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
+    }
+
+    private areSpacesBetweenEmpty(fromX: number, fromY: number, toX: number, toY: number): boolean {
+        const directionX = Math.sign(toX - fromX);
+        const directionY = Math.sign(toY - fromY);
+        let currentX = fromX + directionX;
+        let currentY = fromY + directionY;
+
+        while (currentX !== toX || currentY !== toY) {
+            if (this.getPieceAt(0, currentY, currentX)) {
+                return false;
+            }
+
+            currentX += directionX;
+            currentY += directionY;
+        }
+
+        return true;
     }
 
     private stringPositionToArray(pos: string): number[] {
