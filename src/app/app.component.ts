@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import  Game from './types';
+import  { Game } from './types';
 import  Chess from './games/chess';
 
 @Component({

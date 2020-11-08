@@ -1,3 +1,3 @@
-<div (dragleave)="onDragLeave($event)" (dragenter)="onDragEnter($event)" (dragover)="allowDrop($event)" (drop)="onDrop()" [class.isDark]="isDark" [class.isHoveredOver]="hoveredOverRefCounter > 0"  class="square">
-<img (dragleave)="onDragLeave($event)" (dragenter)="onDragEnter($event)" *ngIf="piece" src="../../assets/{{piece}}" draggable="true" (dragstart)="onDragStart()"  (dragend)="onDragEnd()" class="square-piece" [class.square-piece-dragged]="isBeingDragged">
+<div (dragleave)="onDragLeave()" (dragenter)="onDragEnter()" (dragover)="allowDrop($event)" (drop)="onDrop()" [class.square]="true" [class.isDark]="isDark" [class.isHoveredOver]="hoveredOverRefCounter > 0" >
+<img (dragleave)="onDragLeave()" (dragenter)="onDragEnter()" *ngIf="piece" src="../../assets/{{piece}}" draggable="true" (dragstart)="onDragStart()"  (dragend)="onDragEnd()" class="square-piece" [class.square-piece-dragged]="isBeingDragged">
 </div>

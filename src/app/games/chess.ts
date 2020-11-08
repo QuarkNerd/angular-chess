@@ -1,8 +1,13 @@
 import { Game, Move }  from '../types';
 
+const BLACK = "b";
+const WHITE = "w";
+
 export default class Chess implements Game {
     name: string = "chess";
     boards: string[][][];
+    nextPlayer: string;
+    isTimeToPromote: boolean;
 
     constructor() {
         // ordered in this fashion to align 0,0 with a1
@@ -22,32 +27,108 @@ export default class Chess implements Game {
                 ["b-r" ,"b-kn" ,"b-b" ,"b-q" ],
             ]
         ];
+        this.nextPlayer = WHITE;
+        this.isTimeToPromote = false;
     }
 
     giveNextMove(move: Move) {
-        const FROM_POS = this.stringPositionToArray(move.from);
-        const TO_POS = this.stringPositionToArray(move.to);
-        const PIECE = this.getPieceAt(FROM_POS);
+        const [FROM_BOARD, FROM_Y, FROM_X] = this.stringPositionToArray(move.from);
+        const [TO_BOARD, TO_Y, TO_X]  = this.stringPositionToArray(move.to);
+        const MOVING_PIECE = this.getPieceAt(FROM_BOARD, FROM_Y, FROM_X);
+        const TARGET_PIECE = this.getPieceAt(TO_BOARD, TO_Y, TO_X);
+        const [ MOVING_PLAYER, MOVING_PIECE_TYPE ] = MOVING_PIECE.split("-");
+        const [ TARGET_PLAYER, TARGET_PIECE_TYPE ] = TARGET_PIECE.split("-");
+
+        // basic validation here
+
+        if (this.isTimeToPromote) {
+            this.isTimeToPromote = false;
+            return;
+        }
+
+        // en passant determine here
+
+        //castling here maybe??
+
+        if ( MOVING_PLAYER !== this.nextPlayer ||
+             TARGET_PLAYER === this.nextPlayer ||
+             FROM_BOARD === 1                  ||
+             TO_BOARD === 1
+            ) return;
         
-        if (FROM_POS[0] === 0) {
-            this.setPieceAt(FROM_POS, "");
+        const DIFF_X = TO_X - FROM_X;
+        const DIFF_Y = TO_Y - FROM_Y;
+        const ABS_DIFF_X = Math.abs(DIFF_X);
+        const ABS_DIFF_Y = Math.abs(DIFF_Y);
+
+        switch (MOVING_PIECE_TYPE) {
+            case "p":
+                const [allowedDirection, startingPos] = MOVING_PLAYER === WHITE ? [1, 1] : [-1, 6];
+
+                if (Math.sign(DIFF_Y) !== allowedDirection || 
+                        ABS_DIFF_Y > 2 || ABS_DIFF_X > 1) return;
+
+                if (ABS_DIFF_X === 1 && !TARGET_PLAYER) return;
+                if (ABS_DIFF_X === 0 && TARGET_PLAYER) return; // maybe abstyract away
+                
+                if (ABS_DIFF_Y === 2 
+                    && (
+                        FROM_Y !== startingPos  ||
+                        ABS_DIFF_X              ||
+                        this.getPieceAt(0, FROM_Y + allowedDirection, FROM_X)
+                        )
+                    ) return;
+                break;
+            case "kn":
+                if ((ABS_DIFF_X === 2 && ABS_DIFF_Y === 1) || (ABS_DIFF_X === 1 && ABS_DIFF_Y === 2)) {
+                    break;
+                } else {
+                    return;
+                }
+            case "ki":
+                if (ABS_DIFF_X > 1 || ABS_DIFF_Y > 1) return;
+                break;
+            case "r":
+                if (ABS_DIFF_X !== 0 && ABS_DIFF_Y !== 0) return;
+                // pieces in middle
+                break;
+            case "b":
+                if (ABS_DIFF_X !== ABS_DIFF_Y) return;
+                // pieces in middle
+                break;
+            case "q":
+                if (ABS_DIFF_X !== 0 && ABS_DIFF_Y !== 0 && ABS_DIFF_X !== ABS_DIFF_Y) return;
+                break;
+                // pieces in middle
         }
 
-        if (TO_POS[0] === 0) {
-            this.setPieceAt(TO_POS, PIECE);
-        }
+        // define promnotion here, so the rest can be abstracted
 
+        this.setPieceAtMainBoard(TO_Y, TO_X, MOVING_PIECE);
+        this.setPieceAtMainBoard(FROM_Y, FROM_X, "");
+        // if (FROM_POS[0] === 0) {
+        //     this.setPieceAt(FROM_POS, "");
+        // }
+
+        // if (TO_POS[0] === 0) {
+        // }
+
+        this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
     }
 
     private stringPositionToArray(pos: string): number[] {
         return pos.split('-').map(a => parseInt(a));
     }
 
-    private getPieceAt(pos: number[]): string {
-        return this.boards[pos[0]][pos[1]][pos[2]]
+    private getPieceAt(board: number, y: number, x: number): string {
+        return this.boards[board][y][x]
     }
 
-    private setPieceAt(pos: number[], piece: string) {
-        this.boards[pos[0]][pos[1]][pos[2]] = piece;
+    private setPieceAtMainBoard(y: number, x: number, piece: string) {
+        this.setPieceAt(0, y, x, piece);
+    }
+
+    private setPieceAt(board: number, y: number, x: number, piece: string) {
+        this.boards[board][y][x] = piece;
     }
 }
