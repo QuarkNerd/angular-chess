@@ -8,6 +8,8 @@ export default class Chess implements Game {
     boards: string[][][];
     nextPlayer: string;
     isTimeToPromote: boolean;
+    doublePawnMoveLastMove: number;
+    
 
     constructor() {
         // ordered in this fashion to align 0,0 with a1
@@ -29,6 +31,7 @@ export default class Chess implements Game {
         ];
         this.nextPlayer = WHITE;
         this.isTimeToPromote = false;
+        this.doublePawnMoveLastMove = null;
     }
 
     giveNextMove(move: Move) {
@@ -52,8 +55,6 @@ export default class Chess implements Game {
             return;
         }
 
-        // en passant determine here
-
         //castling here maybe??
 
         if ( TARGET_PLAYER === this.nextPlayer ||
@@ -65,23 +66,50 @@ export default class Chess implements Game {
         const ABS_DIFF_X = Math.abs(DIFF_X);
         const ABS_DIFF_Y = Math.abs(DIFF_Y);
 
+        if (this.doublePawnMoveLastMove === TO_X && 
+            MOVING_PIECE_TYPE === "p"            && 
+            !TARGET_PIECE                        &&
+            TO_Y === (MOVING_PLAYER === WHITE ? 5 : 2)
+            ) {
+            this.setPieceAtMainBoard(TO_Y + (MOVING_PLAYER === WHITE ? -1 : 1), TO_X, "");
+            this.setPieceAtMainBoard(TO_Y, TO_X, MOVING_PIECE);
+            this.setPieceAtMainBoard(FROM_Y, FROM_X, "");
+            this.doublePawnMoveLastMove = null; // Only happens on valid move
+            this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
+            return;
+        }
+
+        if (MOVING_PIECE_TYPE === "p" && ABS_DIFF_Y === 2) {
+            const [allowedDirection, startingPos] = MOVING_PLAYER === WHITE ? [1, 1] : [-1, 6];
+            if (FROM_Y !== startingPos  ||
+                ABS_DIFF_X              ||
+                TARGET_PIECE            ||
+                Math.sign(DIFF_Y) !== allowedDirection ||
+                this.getPieceAt(0, FROM_Y + allowedDirection, FROM_X)) return;
+
+                this.doublePawnMoveLastMove = TO_X;
+                this.setPieceAtMainBoard(TO_Y, TO_X, MOVING_PIECE);
+                this.setPieceAtMainBoard(FROM_Y, FROM_X, "");
+                this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
+        }
+
+                    //     if (ABS_DIFF_Y === 2 
+                    // && (
+                    //     FROM_Y !== startingPos  ||
+                    //     ABS_DIFF_X              ||
+                    //     this.getPieceAt(0, FROM_Y + allowedDirection, FROM_X)
+                    //     )
+                    // ) return; startingPos] = MOVING_PLAYER === WHITE ? [1, 1] : [-1, 6];
+
         switch (MOVING_PIECE_TYPE) {
             case "p":
-                const [allowedDirection, startingPos] = MOVING_PLAYER === WHITE ? [1, 1] : [-1, 6];
+                const allowedDirection = MOVING_PLAYER === WHITE ? 1 : -1;
 
                 if (Math.sign(DIFF_Y) !== allowedDirection || 
-                        ABS_DIFF_Y > 2 || ABS_DIFF_X > 1) return;
+                        ABS_DIFF_Y > 1 || ABS_DIFF_X > 1) return;
 
                 if (ABS_DIFF_X === 1 && !TARGET_PLAYER) return;
-                if (ABS_DIFF_X === 0 && TARGET_PLAYER) return; // maybe abstyract away
-                
-                if (ABS_DIFF_Y === 2 
-                    && (
-                        FROM_Y !== startingPos  ||
-                        ABS_DIFF_X              ||
-                        this.getPieceAt(0, FROM_Y + allowedDirection, FROM_X)
-                        )
-                    ) return;
+                if (ABS_DIFF_X === 0 && TARGET_PLAYER) return;
                 break;
             case "kn":
                 if ((ABS_DIFF_X === 2 && ABS_DIFF_Y === 1) || (ABS_DIFF_X === 1 && ABS_DIFF_Y === 2)) {
@@ -108,18 +136,13 @@ export default class Chess implements Game {
 
         this.setPieceAtMainBoard(TO_Y, TO_X, MOVING_PIECE);
         this.setPieceAtMainBoard(FROM_Y, FROM_X, "");
-        // if (FROM_POS[0] === 0) {
-        //     this.setPieceAt(FROM_POS, "");
-        // }
-
-        // if (TO_POS[0] === 0) {
-        // }
-
+        this.doublePawnMoveLastMove = null; // Only happens on valid moves
 
         if (MOVING_PIECE_TYPE === "p" && (TO_Y === 0 || TO_Y === 7)) {
-            this.isTimeToPromote = true;
-            return;
-        } 
+                this.isTimeToPromote = true;
+                return;
+        }
+        
         this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
     }
 
