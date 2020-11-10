@@ -9,6 +9,18 @@ export default class Chess implements Game {
     nextPlayer: string;
     isTimeToPromote: boolean;
     doublePawnMoveLastMove: number;
+    castlingPossibility: {
+        [BLACK]: {
+            hasRookZeroBeenMoved: boolean,
+            hasRookSevenBeenMoved: boolean,
+            hasKingBeenMoved: boolean,
+        },
+        [WHITE]: {
+            hasRookZeroBeenMoved: boolean,
+            hasRookSevenBeenMoved: boolean,
+            hasKingBeenMoved: boolean,
+        }
+    }
     
 
     constructor() {
@@ -29,6 +41,19 @@ export default class Chess implements Game {
                 ["b-r" ,"b-kn" ,"b-b" ,"b-q" ],
             ]
         ];
+        this.castlingPossibility = {
+            [WHITE]: {
+                hasRookZeroBeenMoved: false,
+                hasRookSevenBeenMoved: false,
+                hasKingBeenMoved: false,
+            },
+            [BLACK]: {
+                hasRookZeroBeenMoved: false,
+                hasRookSevenBeenMoved: false,
+                hasKingBeenMoved: false,
+            }
+    }
+
         this.nextPlayer = WHITE;
         this.isTimeToPromote = false;
         this.doublePawnMoveLastMove = null;
@@ -54,8 +79,6 @@ export default class Chess implements Game {
             this.isTimeToPromote = false;
             return;
         }
-
-        //castling here maybe??
 
         if ( TARGET_PLAYER === this.nextPlayer ||
              FROM_BOARD === 1                  
@@ -93,13 +116,26 @@ export default class Chess implements Game {
                 this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
         }
 
-                    //     if (ABS_DIFF_Y === 2 
-                    // && (
-                    //     FROM_Y !== startingPos  ||
-                    //     ABS_DIFF_X              ||
-                    //     this.getPieceAt(0, FROM_Y + allowedDirection, FROM_X)
-                    //     )
-                    // ) return; startingPos] = MOVING_PLAYER === WHITE ? [1, 1] : [-1, 6];
+        if (MOVING_PIECE_TYPE === "ki" && ABS_DIFF_Y === 0 && ABS_DIFF_X === 2 
+                                 && !this.castlingPossibility[MOVING_PLAYER].hasKingBeenMoved) {
+            const direction = Math.sign(DIFF_X);
+            const [hasRelevantRookMoved, rookX] = 
+                  direction === 1 ? [this.castlingPossibility[MOVING_PLAYER].hasRookSevenBeenMoved, 7] :
+                                    [this.castlingPossibility[MOVING_PLAYER].hasRookZeroBeenMoved, 0];
+            if (!hasRelevantRookMoved) {
+                if(this.areSpacesBetweenEmpty(FROM_X, FROM_Y, rookX, FROM_Y)) {
+                    this.setPieceAtMainBoard(TO_Y, TO_X, MOVING_PIECE);
+                    this.setPieceAtMainBoard(FROM_Y, FROM_X, "");
+                    const rook = this.getPieceAt(0, FROM_Y,rookX);
+                    this.setPieceAtMainBoard(FROM_Y, TO_X - direction, rook);
+                    this.setPieceAtMainBoard(FROM_Y, rookX, "");
+                    this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
+                    return;
+                } else {
+                    return;
+                }
+            }
+        }
 
         switch (MOVING_PIECE_TYPE) {
             case "p":
@@ -138,7 +174,23 @@ export default class Chess implements Game {
         this.setPieceAtMainBoard(FROM_Y, FROM_X, "");
         this.doublePawnMoveLastMove = null; // Only happens on valid moves
 
-        if (MOVING_PIECE_TYPE === "p" && (TO_Y === 0 || TO_Y === 7)) {
+        if (MOVING_PIECE_TYPE === "ki" && !this.castlingPossibility[MOVING_PLAYER].hasKingBeenMoved) {
+            this.castlingPossibility[MOVING_PLAYER].hasKingBeenMoved = true;
+        } else if (MOVING_PIECE_TYPE === "r") {
+            // ignoring colour of piece moved because the only way for the wrong colour's piece
+            // to match the condition
+            const coor = `${FROM_X}-${FROM_Y}`
+            switch (coor) {
+                case '0-0':
+                    this.castlingPossibility[WHITE].hasRookZeroBeenMoved = true;
+                case '7-0':
+                    this.castlingPossibility[WHITE].hasRookSevenBeenMoved = true;
+                case '0-7':
+                    this.castlingPossibility[BLACK].hasRookZeroBeenMoved = true;
+                case '0-7':
+                    this.castlingPossibility[BLACK].hasRookSevenBeenMoved = true;
+            }
+        } else if (MOVING_PIECE_TYPE === "p" && (TO_Y === 0 || TO_Y === 7)) {
                 this.isTimeToPromote = true;
                 return;
         }
