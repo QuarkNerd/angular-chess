@@ -89,33 +89,6 @@ export default class Chess implements Game {
         const ABS_DIFF_X = Math.abs(DIFF_X);
         const ABS_DIFF_Y = Math.abs(DIFF_Y);
 
-        if (this.doublePawnMoveLastMove === TO_X && 
-            MOVING_PIECE_TYPE === "p"            && 
-            !TARGET_PIECE                        &&
-            TO_Y === (MOVING_PLAYER === WHITE ? 5 : 2)
-            ) {
-            this.setPieceAtMainBoard(TO_Y + (MOVING_PLAYER === WHITE ? -1 : 1), TO_X, "");
-            this.setPieceAtMainBoard(TO_Y, TO_X, MOVING_PIECE);
-            this.setPieceAtMainBoard(FROM_Y, FROM_X, "");
-            this.doublePawnMoveLastMove = null; // Only happens on valid move
-            this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
-            return;
-        }
-
-        if (MOVING_PIECE_TYPE === "p" && ABS_DIFF_Y === 2) {
-            const [allowedDirection, startingPos] = MOVING_PLAYER === WHITE ? [1, 1] : [-1, 6];
-            if (FROM_Y !== startingPos  ||
-                ABS_DIFF_X              ||
-                TARGET_PIECE            ||
-                Math.sign(DIFF_Y) !== allowedDirection ||
-                this.getPieceAt(0, FROM_Y + allowedDirection, FROM_X)) return;
-
-                this.doublePawnMoveLastMove = TO_X;
-                this.setPieceAtMainBoard(TO_Y, TO_X, MOVING_PIECE);
-                this.setPieceAtMainBoard(FROM_Y, FROM_X, "");
-                this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
-        }
-
         if (MOVING_PIECE_TYPE === "ki" && ABS_DIFF_Y === 0 && ABS_DIFF_X === 2 
                                  && !this.castlingPossibility[MOVING_PLAYER].hasKingBeenMoved) {
             const direction = Math.sign(DIFF_X);
@@ -130,22 +103,43 @@ export default class Chess implements Game {
                     this.setPieceAtMainBoard(FROM_Y, TO_X - direction, rook);
                     this.setPieceAtMainBoard(FROM_Y, rookX, "");
                     this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
-                    return;
-                } else {
-                    return;
-                }
+                } 
+                return; // need to set castling possibility bools
             }
         }
 
         switch (MOVING_PIECE_TYPE) {
             case "p":
-                const allowedDirection = MOVING_PLAYER === WHITE ? 1 : -1;
+                const [allowedDirection, startingPos] = MOVING_PLAYER === WHITE ? [1, 1] : [-1, 6];
+                if (Math.sign(DIFF_Y) !== allowedDirection || ABS_DIFF_X > 1) return;
+                if (ABS_DIFF_X === 0 && TARGET_PLAYER) return;
+                if (ABS_DIFF_Y > 2) return;
 
-                if (Math.sign(DIFF_Y) !== allowedDirection || 
-                        ABS_DIFF_Y > 1 || ABS_DIFF_X > 1) return;
+                if (this.doublePawnMoveLastMove === TO_X && 
+                    !TARGET_PIECE                        &&
+                    TO_Y === (MOVING_PLAYER === WHITE ? 5 : 2)
+                    ) {
+                    this.setPieceAtMainBoard(TO_Y + (MOVING_PLAYER === WHITE ? -1 : 1), TO_X, "");
+                    this.setPieceAtMainBoard(TO_Y, TO_X, MOVING_PIECE);
+                    this.setPieceAtMainBoard(FROM_Y, FROM_X, "");
+                    this.doublePawnMoveLastMove = null; // Only happens on valid move
+                    this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
+                    return;
+                }
+
+                if (ABS_DIFF_Y === 2) {
+                    if (FROM_Y !== startingPos  ||
+                        ABS_DIFF_X              ||
+                        this.getPieceAt(0, FROM_Y + allowedDirection, FROM_X)) return;
+
+                        this.doublePawnMoveLastMove = TO_X;
+                        this.setPieceAtMainBoard(TO_Y, TO_X, MOVING_PIECE);
+                        this.setPieceAtMainBoard(FROM_Y, FROM_X, "");
+                        this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
+                        return;
+                }
 
                 if (ABS_DIFF_X === 1 && !TARGET_PLAYER) return;
-                if (ABS_DIFF_X === 0 && TARGET_PLAYER) return;
                 break;
             case "kn":
                 if ((ABS_DIFF_X === 2 && ABS_DIFF_Y === 1) || (ABS_DIFF_X === 1 && ABS_DIFF_Y === 2)) {
@@ -172,8 +166,8 @@ export default class Chess implements Game {
 
         this.setPieceAtMainBoard(TO_Y, TO_X, MOVING_PIECE);
         this.setPieceAtMainBoard(FROM_Y, FROM_X, "");
-        this.doublePawnMoveLastMove = null; // Only happens on valid moves
 
+        this.doublePawnMoveLastMove = null; // Only happens on valid moves
         if (MOVING_PIECE_TYPE === "ki" && !this.castlingPossibility[MOVING_PLAYER].hasKingBeenMoved) {
             this.castlingPossibility[MOVING_PLAYER].hasKingBeenMoved = true;
         } else if (MOVING_PIECE_TYPE === "r") {
