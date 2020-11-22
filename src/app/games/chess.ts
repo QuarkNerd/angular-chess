@@ -49,86 +49,88 @@ export default class Chess implements Game {
     }
 
     giveNextMove(move: Move) {
-        const [FROM_BOARD, FROM_Y, FROM_X] = this.stringPositionToArray(move.from);
-        const [TO_BOARD, TO_Y, TO_X]  = this.stringPositionToArray(move.to);
-        const MOVING_PIECE = this.getPieceAt(FROM_BOARD, FROM_Y, FROM_X);
+        const [FROM_BOARD_NUM, FROM_Y, FROM_X] = this.stringPositionToArray(move.from);
+        const [TO_BOARD_NUM, TO_Y, TO_X]  = this.stringPositionToArray(move.to);
+        const MOVING_PIECE = this.getPieceAt(FROM_BOARD_NUM, FROM_Y, FROM_X);
         const [ MOVING_PLAYER, MOVING_PIECE_TYPE ] = MOVING_PIECE.split("-");
-        const [ TARGET_PLAYER, TARGET_PIECE_TYPE ] = this.getPieceAt(TO_BOARD, TO_Y, TO_X).split("-");
+        const [ TARGET_PLAYER, TARGET_PIECE_TYPE ] = this.getPieceAt(TO_BOARD_NUM, TO_Y, TO_X).split("-");
 
         // basic validation here
-        if ( MOVING_PLAYER !== this.nextPlayer || TO_BOARD === 1) return;
+        if ( MOVING_PLAYER !== this.nextPlayer || TO_BOARD_NUM === 1) return;
+        const BOARD = this.boards[0];
 
         if (this.isTimeToPromote) {
-            if (FROM_BOARD !== 1 || TARGET_PIECE_TYPE !== "p" || TARGET_PLAYER !== this.nextPlayer) return;
+            if (FROM_BOARD_NUM !== 1 || TARGET_PIECE_TYPE !== "p" || TARGET_PLAYER !== this.nextPlayer) return;
 
-            this.setPieceAtMainBoard(TO_Y, TO_X, MOVING_PIECE);
+            BOARD[TO_Y][TO_X] = MOVING_PIECE;
             this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
             this.isTimeToPromote = false;
             return;
         }
 
-        if ( TARGET_PLAYER === this.nextPlayer || FROM_BOARD === 1) return;
+        if ( TARGET_PLAYER === this.nextPlayer || FROM_BOARD_NUM === 1) return;
         
         const DIFF_X = TO_X - FROM_X;
         const DIFF_Y = TO_Y - FROM_Y;
         const ABS_DIFF_X = Math.abs(DIFF_X);
-        const ABS_DIFF_Y = Math.abs(DIFF_Y);
 
-        if (MOVING_PIECE_TYPE === "ki" && ABS_DIFF_Y === 0 && ABS_DIFF_X === 2 
+        if (MOVING_PIECE_TYPE === "ki" && DIFF_Y === 0 && ABS_DIFF_X === 2 
                                  && !this.castlingPossibility[MOVING_PLAYER].hasKingBeenMoved) {
             const direction = Math.sign(DIFF_X);
             const [hasRelevantRookMoved, rookX] = 
                   direction === 1 ? [this.castlingPossibility[MOVING_PLAYER].hasRookSevenBeenMoved, 7] :
                                     [this.castlingPossibility[MOVING_PLAYER].hasRookZeroBeenMoved, 0];
+            
             if (!hasRelevantRookMoved) {
-                if(this.areSpacesBetweenEmpty(FROM_X, FROM_Y, rookX, FROM_Y)) {
-                    this.setPieceAtMainBoard(TO_Y, TO_X, MOVING_PIECE);
-                    this.setPieceAtMainBoard(FROM_Y, FROM_X, "");
-                    const rook = this.getPieceAt(0, FROM_Y,rookX);
-                    this.setPieceAtMainBoard(FROM_Y, TO_X - direction, rook);
-                    this.setPieceAtMainBoard(FROM_Y, rookX, "");
+                const rook = BOARD[FROM_Y][rookX];
+                if(this.areSpacesBetweenEmpty(FROM_X, FROM_Y, rookX, FROM_Y) && 
+                    rook === `${MOVING_PLAYER}-r`
+                ) {
+                    BOARD[TO_Y][TO_X] = MOVING_PIECE;
+                    BOARD[FROM_Y][FROM_X] = "";
+                    BOARD[FROM_Y][TO_X - direction] = rook;
+                    BOARD[FROM_Y][rookX] = "";
                     this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
+                    this.castlingPossibility[MOVING_PLAYER].hasKingBeenMoved = true;
                 } 
                 return; // need to set castling possibility bools
             }
         }
         
         const move2D = { 
-            from: { 
-                x: FROM_X, 
-                y: FROM_Y
-            },
-            to: {
-                x: FROM_X, 
-                y: FROM_Y
-            }
-}  
-        const result = checkMove(cloneDeep(this.boards[0]), move2D, this.doublePawnMoveLastMove)
-        console.log(result)
+             FROM_X, 
+             FROM_Y,
+             TO_X, 
+             TO_Y
+        }  
+
+        const result = checkMove(BOARD, move2D, this.doublePawnMoveLastMove)
         if (!result.isValid) return;
 
         this.boards[0] = result.board;
         this.doublePawnMoveLastMove = result.doublePawnMoveLastMove;
 
-        this.doublePawnMoveLastMove = null; // Only happens on valid moves
+
         if (MOVING_PIECE_TYPE === "ki" && !this.castlingPossibility[MOVING_PLAYER].hasKingBeenMoved) {
             this.castlingPossibility[MOVING_PLAYER].hasKingBeenMoved = true;
         } else if (MOVING_PIECE_TYPE === "r") {
-            // ignoring colour of piece moved because the only way for the wrong colour's piece
-            // to match the condition
             const coor = `${FROM_X}-${FROM_Y}`
+
             switch (coor) {
                 case '0-0':
                     this.castlingPossibility[WHITE].hasRookZeroBeenMoved = true;
+                    break;
                 case '7-0':
                     this.castlingPossibility[WHITE].hasRookSevenBeenMoved = true;
+                    break;
                 case '0-7':
                     this.castlingPossibility[BLACK].hasRookZeroBeenMoved = true;
-                case '0-7':
+                    break;      
+                case '7-7':
                     this.castlingPossibility[BLACK].hasRookSevenBeenMoved = true;
+                    break;
                 }
-        } 
-        if (MOVING_PIECE_TYPE === "p" && (TO_Y === 0 || TO_Y === 7)) {
+        } else if (MOVING_PIECE_TYPE === "p" && (TO_Y === 0 || TO_Y === 7)) {
             this.isTimeToPromote = true;
             return;
         }
@@ -147,19 +149,10 @@ export default class Chess implements Game {
     private getPieceAt(board: number, y: number, x: number): string {
         return this.boards[board][y][x]
     }
-
-    private setPieceAtMainBoard(y: number, x: number, piece: string) {
-        this.setPieceAt(0, y, x, piece);
-    }
-
-    private setPieceAt(board: number, y: number, x: number, piece: string) {
-        this.boards[board][y][x] = piece;
-    }
 }
 
 function checkMove(board : string[][], move: Move2D, doublePawnMoveLastMove: number ) : { isValid: boolean, board?: string[][], doublePawnMoveLastMove?: number } {
-    const { x : FROM_X, y : FROM_Y} = move.from;
-    const { x : TO_X, y : TO_Y} = move.to;
+    const { FROM_X, FROM_Y, TO_X, TO_Y} = move;
     const MOVING_PIECE = board[FROM_Y][FROM_X]
     const [ MOVING_PLAYER, MOVING_PIECE_TYPE ] = MOVING_PIECE.split("-");
     const TARGET_PIECE = board[TO_Y][TO_X];
@@ -170,6 +163,7 @@ function checkMove(board : string[][], move: Move2D, doublePawnMoveLastMove: num
     const ABS_DIFF_Y = Math.abs(DIFF_Y);
 
     let newDoublePawnMoveLastMove: number = null;
+    board = cloneDeep(board);
 
     switch (MOVING_PIECE_TYPE) {
             case "p":
@@ -252,14 +246,10 @@ function areSpacesBetweenEmpty(board: string[][], fromX: number, fromY: number, 
 }
 
 interface Move2D {
-    from: { 
-        x: number, 
-        y:number
-    }
-    to: {
-         x: number, 
-         y:number
-    }
+    FROM_X: number, 
+    FROM_Y: number,
+    TO_X: number, 
+    TO_Y: number
 }
 
 interface CastlingPossibility {
