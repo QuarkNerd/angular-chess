@@ -106,6 +106,7 @@ export default class Chess implements Game {
 
         const result = checkMove(BOARD, move2D, this.doublePawnMoveLastMove)
         if (!result.isValid) return;
+        if (checkForCheck(result.board, this.nextPlayer)) return;
 
         this.boards[0] = result.board;
         this.doublePawnMoveLastMove = result.doublePawnMoveLastMove;
@@ -149,6 +150,40 @@ export default class Chess implements Game {
     private getPieceAt(board: number, y: number, x: number): string {
         return this.boards[board][y][x]
     }
+}
+
+
+function checkForCheck(board : string[][], targetPlayer: string) : boolean {
+     const ATTACKING_PLAYER = targetPlayer === BLACK ? WHITE : BLACK;
+     const POSSIBLE_ATTACKERS: { x: number, y: number }[] = [];
+     let king: { x: number, y: number } = null;
+
+     board.forEach((row , y) => {
+        row.forEach( (piece, x) => {
+            let [ player, piece_type ] = piece.split("-");
+
+            if (player === ATTACKING_PLAYER) {
+                POSSIBLE_ATTACKERS.push({x,y});
+                return;
+            }
+            if (piece_type === "ki") {
+                king = {x,y};
+            }
+        })
+     })
+
+     const TO_X = king.x;
+     const TO_Y = king.y;
+
+     for (let i = 0; i < POSSIBLE_ATTACKERS.length; i++) {
+        const attacker = POSSIBLE_ATTACKERS[i];
+        const move = { FROM_X: attacker.x, FROM_Y: attacker.y, TO_X, TO_Y }
+        const result = checkMove(board, move, null);
+        if (result.isValid) return true;
+    }
+
+     return false;
+
 }
 
 function checkMove(board : string[][], move: Move2D, doublePawnMoveLastMove: number ) : { isValid: boolean, board?: string[][], doublePawnMoveLastMove?: number } {
