@@ -7,7 +7,7 @@ const WHITE = "w";
 export default class Chess implements Game {
     name: string = "chess";
     boards: string[][][];
-    nextPlayer: string;
+    currentPlayer: string;
     isTimeToPromote: boolean;
     doublePawnMoveLastMove: number;
     castlingPossibility: CastlingPossibility
@@ -43,7 +43,7 @@ export default class Chess implements Game {
             }
     }
 
-        this.nextPlayer = WHITE;
+        this.currentPlayer = WHITE;
         this.isTimeToPromote = false;
         this.doublePawnMoveLastMove = null;
     }
@@ -56,19 +56,19 @@ export default class Chess implements Game {
         const [ TARGET_PLAYER, TARGET_PIECE_TYPE ] = this.getPieceAt(TO_BOARD_NUM, TO_Y, TO_X).split("-");
 
         // basic validation here
-        if ( MOVING_PLAYER !== this.nextPlayer || TO_BOARD_NUM === 1) return;
+        if ( MOVING_PLAYER !== this.currentPlayer || TO_BOARD_NUM === 1) return;
         const BOARD = this.boards[0];
 
         if (this.isTimeToPromote) {
-            if (FROM_BOARD_NUM !== 1 || TARGET_PIECE_TYPE !== "p" || TARGET_PLAYER !== this.nextPlayer) return;
+            if (FROM_BOARD_NUM !== 1 || TARGET_PIECE_TYPE !== "p" || TARGET_PLAYER !== this.currentPlayer) return;
 
             BOARD[TO_Y][TO_X] = MOVING_PIECE;
-            this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
+            this.currentPlayer = this.currentPlayer === BLACK ? WHITE : BLACK;
             this.isTimeToPromote = false;
             return;
         }
 
-        if ( TARGET_PLAYER === this.nextPlayer || FROM_BOARD_NUM === 1) return;
+        if ( TARGET_PLAYER === this.currentPlayer || FROM_BOARD_NUM === 1) return;
         
         const DIFF_X = TO_X - FROM_X;
         const DIFF_Y = TO_Y - FROM_Y;
@@ -90,7 +90,7 @@ export default class Chess implements Game {
                     BOARD[FROM_Y][FROM_X] = "";
                     BOARD[FROM_Y][TO_X - direction] = rook;
                     BOARD[FROM_Y][rookX] = "";
-                    this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
+                    this.currentPlayer = this.currentPlayer === BLACK ? WHITE : BLACK;
                     this.castlingPossibility[MOVING_PLAYER].hasKingBeenMoved = true;
                 } 
                 return; // need to set castling possibility bools
@@ -106,7 +106,7 @@ export default class Chess implements Game {
 
         const result = checkMove(BOARD, move2D, this.doublePawnMoveLastMove)
         if (!result.isValid) return;
-        if (checkForCheck(result.board, this.nextPlayer)) return;
+        if (checkForCheck(result.board, this.currentPlayer)) return;
 
         this.boards[0] = result.board;
         this.doublePawnMoveLastMove = result.doublePawnMoveLastMove;
@@ -136,7 +136,7 @@ export default class Chess implements Game {
             return;
         }
 
-        this.nextPlayer = this.nextPlayer === BLACK ? WHITE : BLACK;
+        this.currentPlayer = this.currentPlayer === BLACK ? WHITE : BLACK;
     }
 
     private areSpacesBetweenEmpty(fromX: number, fromY: number, toX: number, toY: number): boolean {
