@@ -32,17 +32,16 @@ export default class Chess implements Game {
         ];
         this.castlingPossibility = {
             [WHITE]: {
-                hasRookZeroBeenMoved: false,
-                hasRookSevenBeenMoved: false,
-                hasKingBeenMoved: false,
+                canRookZeroCastle: true,
+                canRookSevenCastle: true,
+                canKingCastle: true,
             },
             [BLACK]: {
-                hasRookZeroBeenMoved: false,
-                hasRookSevenBeenMoved: false,
-                hasKingBeenMoved: false,
+                canRookZeroCastle: true,
+                canRookSevenCastle: true,
+                canKingCastle: true,
             }
     }
-
         this.currentPlayer = WHITE;
         this.isTimeToPromote = false;
         this.doublePawnMoveLastMove = null;
@@ -70,33 +69,6 @@ export default class Chess implements Game {
 
         if ( TARGET_PLAYER === this.currentPlayer || FROM_BOARD_NUM === 1) return;
         
-        const DIFF_X = TO_X - FROM_X;
-        const DIFF_Y = TO_Y - FROM_Y;
-        const ABS_DIFF_X = Math.abs(DIFF_X);
-
-        if (MOVING_PIECE_TYPE === "ki" && DIFF_Y === 0 && ABS_DIFF_X === 2 
-                                 && !this.castlingPossibility[MOVING_PLAYER].hasKingBeenMoved) {
-            const direction = Math.sign(DIFF_X);
-            const [hasRelevantRookMoved, rookX] = 
-                  direction === 1 ? [this.castlingPossibility[MOVING_PLAYER].hasRookSevenBeenMoved, 7] :
-                                    [this.castlingPossibility[MOVING_PLAYER].hasRookZeroBeenMoved, 0];
-            
-            if (!hasRelevantRookMoved) {
-                const rook = BOARD[FROM_Y][rookX];
-                if(this.areSpacesBetweenEmpty(FROM_X, FROM_Y, rookX, FROM_Y) && 
-                    rook === `${MOVING_PLAYER}-r`
-                ) {
-                    BOARD[TO_Y][TO_X] = MOVING_PIECE;
-                    BOARD[FROM_Y][FROM_X] = "";
-                    BOARD[FROM_Y][TO_X - direction] = rook;
-                    BOARD[FROM_Y][rookX] = "";
-                    this.currentPlayer = this.currentPlayer === BLACK ? WHITE : BLACK;
-                    this.castlingPossibility[MOVING_PLAYER].hasKingBeenMoved = true;
-                } 
-                return; // need to set castling possibility bools
-            }
-        }
-        
         const move2D = { 
              FROM_X, 
              FROM_Y,
@@ -104,43 +76,24 @@ export default class Chess implements Game {
              TO_Y
         }  
 
-        const result = checkMove(BOARD, move2D, this.doublePawnMoveLastMove)
+        const extraGameState = {
+            doublePawnMoveLastMove: this.doublePawnMoveLastMove,
+            castlingPossibility: this.castlingPossibility
+        }
+
+        const result = validateMove(BOARD, move2D, extraGameState);
         if (!result.isValid) return;
-        if (checkForCheck(result.board, this.currentPlayer)) return;
 
         this.boards[0] = result.board;
-        this.doublePawnMoveLastMove = result.doublePawnMoveLastMove;
+        this.doublePawnMoveLastMove = result.extraGameState.doublePawnMoveLastMove;
+        this.castlingPossibility = result.extraGameState.castlingPossibility;
 
-
-        if (MOVING_PIECE_TYPE === "ki" && !this.castlingPossibility[MOVING_PLAYER].hasKingBeenMoved) {
-            this.castlingPossibility[MOVING_PLAYER].hasKingBeenMoved = true;
-        } else if (MOVING_PIECE_TYPE === "r") {
-            const coor = `${FROM_X}-${FROM_Y}`
-
-            switch (coor) {
-                case '0-0':
-                    this.castlingPossibility[WHITE].hasRookZeroBeenMoved = true;
-                    break;
-                case '7-0':
-                    this.castlingPossibility[WHITE].hasRookSevenBeenMoved = true;
-                    break;
-                case '0-7':
-                    this.castlingPossibility[BLACK].hasRookZeroBeenMoved = true;
-                    break;      
-                case '7-7':
-                    this.castlingPossibility[BLACK].hasRookSevenBeenMoved = true;
-                    break;
-                }
-        } else if (MOVING_PIECE_TYPE === "p" && (TO_Y === 0 || TO_Y === 7)) {
+        if (MOVING_PIECE_TYPE === "p" && (TO_Y === 0 || TO_Y === 7)) {
             this.isTimeToPromote = true;
             return;
         }
 
         this.currentPlayer = this.currentPlayer === BLACK ? WHITE : BLACK;
-    }
-
-    private areSpacesBetweenEmpty(fromX: number, fromY: number, toX: number, toY: number): boolean {
-        return areSpacesBetweenEmpty(this.boards[0], fromX, fromY, toX, toY);
     }
 
     private stringPositionToArray(pos: string): number[] {
@@ -178,7 +131,7 @@ function checkForCheck(board : string[][], targetPlayer: string) : boolean {
      for (let i = 0; i < POSSIBLE_ATTACKERS.length; i++) {
         const attacker = POSSIBLE_ATTACKERS[i];
         const move = { FROM_X: attacker.x, FROM_Y: attacker.y, TO_X, TO_Y }
-        const result = checkMove(board, move, null);
+        const result = validateMove(board, move, null, true);
         if (result.isValid) return true;
     }
 
@@ -186,20 +139,25 @@ function checkForCheck(board : string[][], targetPlayer: string) : boolean {
 
 }
 
-function checkMove(board : string[][], move: Move2D, doublePawnMoveLastMove: number ) : { isValid: boolean, board?: string[][], doublePawnMoveLastMove?: number } {
+function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGameState, checkForCheckMode: boolean = false) : { isValid: boolean, board?: string[][], extraGameState?: ExtraGameState } {
     const { FROM_X, FROM_Y, TO_X, TO_Y} = move;
-    const MOVING_PIECE = board[FROM_Y][FROM_X]
+    const MOVING_PIECE = board[FROM_Y][FROM_X];
     const [ MOVING_PLAYER, MOVING_PIECE_TYPE ] = MOVING_PIECE.split("-");
     const TARGET_PIECE = board[TO_Y][TO_X];
     
+    // throw error if target pice is not opposite king
+
     const DIFF_X = TO_X - FROM_X;
     const DIFF_Y = TO_Y - FROM_Y;
     const ABS_DIFF_X = Math.abs(DIFF_X);
     const ABS_DIFF_Y = Math.abs(DIFF_Y);
 
-    let newDoublePawnMoveLastMove: number = null;
-    board = cloneDeep(board);
-
+    if (!checkForCheckMode) {
+        board = cloneDeep(board);
+        extraGameState = cloneDeep(extraGameState);
+    } else {
+        extraGameState = null;
+    }
     switch (MOVING_PIECE_TYPE) {
             case "p":
                 const [allowedDirection, startingPos] = MOVING_PLAYER === WHITE ? [1, 1] : [-1, 6];
@@ -207,7 +165,7 @@ function checkMove(board : string[][], move: Move2D, doublePawnMoveLastMove: num
                 if (ABS_DIFF_X === 0 && TARGET_PIECE) return { isValid : false };
                 if (ABS_DIFF_Y > 2) return { isValid : false };
 
-                if (doublePawnMoveLastMove === TO_X && 
+                if (extraGameState?.doublePawnMoveLastMove === TO_X && 
                     !TARGET_PIECE                        &&
                     TO_Y === (MOVING_PLAYER === WHITE ? 5 : 2)
                     ) {
@@ -220,7 +178,7 @@ function checkMove(board : string[][], move: Move2D, doublePawnMoveLastMove: num
                         ABS_DIFF_X              ||
                         board[FROM_Y + allowedDirection][FROM_X]) return { isValid : false }; //switch to is space in between empty
 
-                        newDoublePawnMoveLastMove = TO_X;
+                        extraGameState.doublePawnMoveLastMove = TO_X;
                         break;
                 }
 
@@ -229,15 +187,43 @@ function checkMove(board : string[][], move: Move2D, doublePawnMoveLastMove: num
             case "kn":
                 if ((ABS_DIFF_X === 2 && ABS_DIFF_Y === 1) || (ABS_DIFF_X === 1 && ABS_DIFF_Y === 2)) {
                     break;
-                } else {
+                }
+                return { isValid : false };
+            case "ki":
+                if (DIFF_Y === 0 && ABS_DIFF_X === 2 && extraGameState?.castlingPossibility[MOVING_PLAYER].canKingCastle) {
+                    const direction = Math.sign(DIFF_X);
+                    const [canRelevantRookCastle, rookX] = 
+                    direction === 1 ? [extraGameState?.castlingPossibility[MOVING_PLAYER].canRookSevenCastle, 7] :
+                                    [extraGameState?.castlingPossibility[MOVING_PLAYER].canRookZeroCastle, 0];
+                    if (canRelevantRookCastle) {
+                        const rook = board[FROM_Y][rookX];
+                        if (areSpacesBetweenEmpty(board, FROM_X, FROM_Y, rookX, FROM_Y) && 
+                            rook === `${MOVING_PLAYER}-r`
+                        ) {
+                            if (checkForCheck(board, MOVING_PLAYER)) return { isValid: false };
+                            board[FROM_Y][FROM_X] = "";
+                            board[FROM_Y][FROM_X + direction] = MOVING_PIECE;
+                            if (checkForCheck(board, MOVING_PLAYER)) return { isValid: false };
+                            board[FROM_Y][FROM_X + direction] = "";
+                            board[FROM_Y][TO_X - direction] = rook;
+                            board[FROM_Y][rookX] = "";
+                            extraGameState.castlingPossibility[MOVING_PLAYER].canKingCastle = false;
+                            break;
+                        }
+                    }
                     return { isValid : false };
                 }
-            case "ki":
                 if (ABS_DIFF_X > 1 || ABS_DIFF_Y > 1) return { isValid : false };
+                if (!checkForCheckMode) extraGameState.castlingPossibility[MOVING_PLAYER].canKingCastle = false;
                 break;
             case "r":
                 if (ABS_DIFF_X !== 0 && ABS_DIFF_Y !== 0) return { isValid : false };
                 if (!areSpacesBetweenEmpty(board, FROM_X, FROM_Y, TO_X, TO_Y)) return { isValid : false };
+                if (!checkForCheckMode) {
+                    updateRookCastlingPossibility(FROM_X, FROM_Y, extraGameState.castlingPossibility);
+                    // needed in case the one rook moves to the position of the other, without the first moving
+                    updateRookCastlingPossibility(TO_X, TO_Y, extraGameState.castlingPossibility);
+                }
                 break;
             case "b":
                 if (ABS_DIFF_X !== ABS_DIFF_Y) return { isValid : false };
@@ -250,13 +236,19 @@ function checkMove(board : string[][], move: Move2D, doublePawnMoveLastMove: num
 
         }
 
+        if (checkForCheckMode) {
+            return { isValid: true }
+        }
+
         board[FROM_Y][FROM_X] = "";
         board[TO_Y][TO_X] = MOVING_PIECE;
+
+        if (checkForCheck(board, MOVING_PLAYER)) return { isValid: false };
 
         return {
             isValid: true,
             board,
-            doublePawnMoveLastMove: newDoublePawnMoveLastMove,
+            extraGameState,
         }
             
 }
@@ -280,6 +272,30 @@ function areSpacesBetweenEmpty(board: string[][], fromX: number, fromY: number, 
         return true;
 }
 
+function updateRookCastlingPossibility(x: number, y: number, castlingPossibility: CastlingPossibility) {
+    const coor = `${x}-${y}`;
+
+    switch (coor) {
+        case '0-0':
+            castlingPossibility[WHITE].canRookZeroCastle = false;
+            break;
+        case '7-0':
+            castlingPossibility[WHITE].canRookSevenCastle = false;
+            break;
+        case '0-7':
+            castlingPossibility[BLACK].canRookZeroCastle = false;
+            break;      
+        case '7-7':
+            castlingPossibility[BLACK].canRookSevenCastle = false;
+            break;
+        }
+}
+
+interface ExtraGameState {
+    doublePawnMoveLastMove: number,
+    castlingPossibility: CastlingPossibility
+}
+
 interface Move2D {
     FROM_X: number, 
     FROM_Y: number,
@@ -289,13 +305,13 @@ interface Move2D {
 
 interface CastlingPossibility {
      [BLACK]: {
-            hasRookZeroBeenMoved: boolean,
-            hasRookSevenBeenMoved: boolean,
-            hasKingBeenMoved: boolean,
+            canRookZeroCastle: boolean,
+            canRookSevenCastle: boolean,
+            canKingCastle: boolean,
         },
         [WHITE]: {
-            hasRookZeroBeenMoved: boolean,
-            hasRookSevenBeenMoved: boolean,
-            hasKingBeenMoved: boolean,
+            canRookZeroCastle: boolean,
+            canRookSevenCastle: boolean,
+            canKingCastle: boolean,
         }
 }
