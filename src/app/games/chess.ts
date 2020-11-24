@@ -144,8 +144,7 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
     const MOVING_PIECE = board[FROM_Y][FROM_X];
     const [ MOVING_PLAYER, MOVING_PIECE_TYPE ] = MOVING_PIECE.split("-");
     const TARGET_PIECE = board[TO_Y][TO_X];
-    
-    // throw error if target pice is not opposite king
+    const [ _, TARGET_PIECE_TYPE ] = TARGET_PIECE.split("-");
 
     const DIFF_X = TO_X - FROM_X;
     const DIFF_Y = TO_Y - FROM_Y;
@@ -156,8 +155,9 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
         board = cloneDeep(board);
         extraGameState = cloneDeep(extraGameState);
     } else {
-        extraGameState = null;
+        if (extraGameState !== null || TARGET_PIECE_TYPE !== "ki") throw 'Invalid parameters';  
     }
+
     switch (MOVING_PIECE_TYPE) {
             case "p":
                 const [allowedDirection, startingPos] = MOVING_PLAYER === WHITE ? [1, 1] : [-1, 6];
