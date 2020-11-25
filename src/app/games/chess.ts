@@ -131,7 +131,7 @@ function checkForCheck(board : string[][], targetPlayer: string) : boolean {
      for (let i = 0; i < POSSIBLE_ATTACKERS.length; i++) {
         const attacker = POSSIBLE_ATTACKERS[i];
         const move = { FROM_X: attacker.x, FROM_Y: attacker.y, TO_X, TO_Y }
-        const result = validateMove(board, move, null, true);
+        const result = validateMove(board, move, null, 2);
         if (result.isValid) return true;
     }
 
@@ -139,7 +139,7 @@ function checkForCheck(board : string[][], targetPlayer: string) : boolean {
 
 }
 
-function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGameState, checkForCheckMode: boolean = false) : { isValid: boolean, board?: string[][], extraGameState?: ExtraGameState } {
+function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGameState, mode: number = 0) : { isValid: boolean, board?: string[][], extraGameState?: ExtraGameState } {
     const { FROM_X, FROM_Y, TO_X, TO_Y} = move;
     const MOVING_PIECE = board[FROM_Y][FROM_X];
     const [ MOVING_PLAYER, MOVING_PIECE_TYPE ] = MOVING_PIECE.split("-");
@@ -151,11 +151,13 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
     const ABS_DIFF_X = Math.abs(DIFF_X);
     const ABS_DIFF_Y = Math.abs(DIFF_Y);
 
-    if (!checkForCheckMode) {
+    let newDoublePawnMoveLastMove: number = null;
+
+    if (mode === 0) {
         board = cloneDeep(board);
         extraGameState = cloneDeep(extraGameState);
-    } else {
-        if (extraGameState !== null || TARGET_PIECE_TYPE !== "ki") throw 'Invalid parameters';  
+    } else if (mode === 2) {
+        extraGameState = null;
     }
 
     switch (MOVING_PIECE_TYPE) {
@@ -173,12 +175,12 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
                     break;
                 }
 
-                if (ABS_DIFF_Y === 2) {
+                if (ABS_DIFF_Y === 2 && mode !== 2) {
                     if (FROM_Y !== startingPos  ||
                         ABS_DIFF_X              ||
                         board[FROM_Y + allowedDirection][FROM_X]) return { isValid : false }; //switch to is space in between empty
 
-                        extraGameState.doublePawnMoveLastMove = TO_X;
+                        newDoublePawnMoveLastMove = TO_X;
                         break;
                 }
 
@@ -193,13 +195,16 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
                 if (DIFF_Y === 0 && ABS_DIFF_X === 2 && extraGameState?.castlingPossibility[MOVING_PLAYER].canKingCastle) {
                     const direction = Math.sign(DIFF_X);
                     const [canRelevantRookCastle, rookX] = 
-                    direction === 1 ? [extraGameState?.castlingPossibility[MOVING_PLAYER].canRookSevenCastle, 7] :
-                                    [extraGameState?.castlingPossibility[MOVING_PLAYER].canRookZeroCastle, 0];
+                    direction === 1 ? [extraGameState.castlingPossibility[MOVING_PLAYER].canRookSevenCastle, 7] :
+                                    [extraGameState.castlingPossibility[MOVING_PLAYER].canRookZeroCastle, 0];
                     if (canRelevantRookCastle) {
                         const rook = board[FROM_Y][rookX];
                         if (areSpacesBetweenEmpty(board, FROM_X, FROM_Y, rookX, FROM_Y) && 
                             rook === `${MOVING_PLAYER}-r`
                         ) {
+                            if (mode === 1) {
+                                board = cloneDeep(board);
+                            }
                             if (checkForCheck(board, MOVING_PLAYER)) return { isValid: false };
                             board[FROM_Y][FROM_X] = "";
                             board[FROM_Y][FROM_X + direction] = MOVING_PIECE;
@@ -207,19 +212,19 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
                             board[FROM_Y][FROM_X + direction] = "";
                             board[FROM_Y][TO_X - direction] = rook;
                             board[FROM_Y][rookX] = "";
-                            extraGameState.castlingPossibility[MOVING_PLAYER].canKingCastle = false;
+                            if (mode === 0)  extraGameState.castlingPossibility[MOVING_PLAYER].canKingCastle = false;
                             break;
                         }
                     }
                     return { isValid : false };
                 }
                 if (ABS_DIFF_X > 1 || ABS_DIFF_Y > 1) return { isValid : false };
-                if (!checkForCheckMode) extraGameState.castlingPossibility[MOVING_PLAYER].canKingCastle = false;
+                if (mode === 0) extraGameState.castlingPossibility[MOVING_PLAYER].canKingCastle = false;
                 break;
             case "r":
                 if (ABS_DIFF_X !== 0 && ABS_DIFF_Y !== 0) return { isValid : false };
                 if (!areSpacesBetweenEmpty(board, FROM_X, FROM_Y, TO_X, TO_Y)) return { isValid : false };
-                if (!checkForCheckMode) {
+                if (mode === 0) {
                     updateRookCastlingPossibility(FROM_X, FROM_Y, extraGameState.castlingPossibility);
                     // needed in case the one rook moves to the position of the other, without the first moving
                     updateRookCastlingPossibility(TO_X, TO_Y, extraGameState.castlingPossibility);
@@ -236,14 +241,14 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
 
         }
 
-        if (checkForCheckMode) {
-            return { isValid: true }
-        }
-
-        board[FROM_Y][FROM_X] = "";
-        board[TO_Y][TO_X] = MOVING_PIECE;
+        if (mode === 2) return { isValid: true };
 
         if (checkForCheck(board, MOVING_PLAYER)) return { isValid: false };
+        if (mode === 1) return { isValid: true };
+
+        extraGameState.doublePawnMoveLastMove = newDoublePawnMoveLastMove;
+        board[FROM_Y][FROM_X] = "";
+        board[TO_Y][TO_X] = MOVING_PIECE;
 
         return {
             isValid: true,
