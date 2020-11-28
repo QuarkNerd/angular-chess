@@ -17,8 +17,8 @@ export default class Chess implements Game {
         // ordered in this fashion to align 0,0 with a1
         this.boards = [
             [
-                [`${WHITE}-r` ,`${WHITE}-kn` ,`${WHITE}-b` ,`${WHITE}-q` ,`${WHITE}-ki` ,`${WHITE}-b` ,`${WHITE}-kn` ,`${WHITE}-r`],
-                [`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ],
+                [`${WHITE}-r` ,`${WHITE}-kn` ,`${WHITE}-b` ,`${WHITE}-q` ,`` ,`${WHITE}-b` ,`${WHITE}-kn` ,`${WHITE}-r`],
+                [`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-ki` ,`${WHITE}-p` ],
                 ["" ,"" ,"" ,"" ,"" ,"" ,"" ,"" ],
                 ["" ,"" ,"" ,"" ,"" ,"" ,"" ,"" ],
                 ["" ,"" ,"" ,"" ,"" ,"" ,"" ,"" ],
@@ -169,7 +169,6 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
                 if (Math.sign(DIFF_Y) !== allowedDirection || ABS_DIFF_X > 1) return { isValid : false };
                 if (ABS_DIFF_X === 0 && TARGET_PIECE) return { isValid : false };
                 if (ABS_DIFF_Y > 2) return { isValid : false };
-
                 if (extraGameState?.doublePawnMoveLastMove === TO_X && 
                     !TARGET_PIECE                        &&
                     TO_Y === (MOVING_PLAYER === WHITE ? 5 : 2)
@@ -177,7 +176,6 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
                     board[TO_Y + (MOVING_PLAYER === WHITE ? -1 : 1)][TO_X] = "";
                     break;
                 }
-
                 if (ABS_DIFF_Y === 2 && mode === 0) {
                     if (FROM_Y !== startingPos  ||
                         ABS_DIFF_X              ||
@@ -187,7 +185,7 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
                         break;
                 }
 
-                if (ABS_DIFF_X === 1 && !TARGET_PIECE) return { isValid : false };
+                if (ABS_DIFF_X === 1 && (!TARGET_PIECE || ABS_DIFF_Y !== 1)) return { isValid : false };
                 break;
             case "kn":
                 if ((ABS_DIFF_X === 2 && ABS_DIFF_Y === 1) || (ABS_DIFF_X === 1 && ABS_DIFF_Y === 2)) {
