@@ -1,8 +1,8 @@
 import { Game, Move }  from '../types';
 import cloneDeep from 'lodash/cloneDeep';
 
-const BLACK = "b";
-const WHITE = "w";
+const BLACK = "BLACK";
+const WHITE =  "WHITE";
 
 export default class Chess implements Game {
     name: string = "chess";
@@ -11,23 +11,24 @@ export default class Chess implements Game {
     isTimeToPromote: boolean;
     doublePawnMoveLastMove: number;
     castlingPossibility: CastlingPossibility
+    text: string;
     
     constructor() {
         // ordered in this fashion to align 0,0 with a1
         this.boards = [
             [
-                ["w-r" ,"w-kn" ,"w-b" ,"w-q" ,"w-ki" ,"w-b" ,"w-kn" ,"w-r"],
-                ["w-p" ,"w-p" ,"w-p" ,"w-p" ,"w-p" ,"w-p" ,"w-p" ,"w-p" ],
+                [`${WHITE}-r` ,`${WHITE}-kn` ,`${WHITE}-b` ,`${WHITE}-q` ,`${WHITE}-ki` ,`${WHITE}-b` ,`${WHITE}-kn` ,`${WHITE}-r`],
+                [`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ,`${WHITE}-p` ],
                 ["" ,"" ,"" ,"" ,"" ,"" ,"" ,"" ],
                 ["" ,"" ,"" ,"" ,"" ,"" ,"" ,"" ],
                 ["" ,"" ,"" ,"" ,"" ,"" ,"" ,"" ],
                 ["" ,"" ,"" ,"" ,"" ,"" ,"" ,"" ],
-                ["b-p" ,"b-p" ,"b-p" ,"b-p" ,"b-p" ,"b-p" ,"b-p" ,"b-p" ],
-                ["b-r" ,"b-kn" ,"b-b" ,"b-q" ,"b-ki" ,"b-b" ,"b-kn" ,"b-r"],
+                [`${BLACK}-p` ,`${BLACK}-p` ,`${BLACK}-p` ,`${BLACK}-p` ,`${BLACK}-p` ,`${BLACK}-p` ,`${BLACK}-p` ,`${BLACK}-p` ],
+                [`${BLACK}-r` ,`${BLACK}-kn` ,`${BLACK}-b` ,`${BLACK}-q` ,`${BLACK}-ki` ,`${BLACK}-b` ,`${BLACK}-kn` ,`${BLACK}-r`],
             ],
             [
-                ["w-r" ,"w-kn" ,"w-b" ,"w-q" ],
-                ["b-r" ,"b-kn" ,"b-b" ,"b-q" ],
+                [`${WHITE}-r` ,`${WHITE}-kn` ,`${WHITE}-b` ,`${WHITE}-q` ],
+                [`${BLACK}-r` ,`${BLACK}-kn` ,`${BLACK}-b` ,`${BLACK}-q` ],
             ]
         ];
         this.castlingPossibility = {
@@ -45,6 +46,7 @@ export default class Chess implements Game {
         this.currentPlayer = WHITE;
         this.isTimeToPromote = false;
         this.doublePawnMoveLastMove = null;
+        this.text = `${capitalise(this.currentPlayer)} to move next`;
     }
 
     giveNextMove(move: Move) {
@@ -94,6 +96,9 @@ export default class Chess implements Game {
         }
 
         this.currentPlayer = this.currentPlayer === BLACK ? WHITE : BLACK;
+        
+        const isInCheck = checkForCheck(result.board, this.currentPlayer);
+        this.text = `${capitalise(this.currentPlayer)} to move next${isInCheck ? ", in check" : "" }`;
     }
 
     private stringPositionToArray(pos: string): number[] {
@@ -114,7 +119,6 @@ function checkForCheck(board : string[][], targetPlayer: string) : boolean {
      board.forEach((row , y) => {
         row.forEach( (piece, x) => {
             let [ player, piece_type ] = piece.split("-");
-
             if (player === ATTACKING_PLAYER) {
                 POSSIBLE_ATTACKERS.push({x,y});
                 return;
@@ -131,7 +135,7 @@ function checkForCheck(board : string[][], targetPlayer: string) : boolean {
      for (let i = 0; i < POSSIBLE_ATTACKERS.length; i++) {
         const attacker = POSSIBLE_ATTACKERS[i];
         const move = { FROM_X: attacker.x, FROM_Y: attacker.y, TO_X, TO_Y }
-        const result = validateMove(board, move, null, 2);
+        const result = validateMove(board, move, null, 1);
         if (result.isValid) return true;
     }
 
@@ -144,7 +148,6 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
     const MOVING_PIECE = board[FROM_Y][FROM_X];
     const [ MOVING_PLAYER, MOVING_PIECE_TYPE ] = MOVING_PIECE.split("-");
     const TARGET_PIECE = board[TO_Y][TO_X];
-    const [ _, TARGET_PIECE_TYPE ] = TARGET_PIECE.split("-");
 
     const DIFF_X = TO_X - FROM_X;
     const DIFF_Y = TO_Y - FROM_Y;
@@ -156,7 +159,7 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
     if (mode === 0) {
         board = cloneDeep(board);
         extraGameState = cloneDeep(extraGameState);
-    } else if (mode === 2) {
+    } else {
         extraGameState = null;
     }
 
@@ -175,7 +178,7 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
                     break;
                 }
 
-                if (ABS_DIFF_Y === 2 && mode !== 2) {
+                if (ABS_DIFF_Y === 2 && mode === 0) {
                     if (FROM_Y !== startingPos  ||
                         ABS_DIFF_X              ||
                         board[FROM_Y + allowedDirection][FROM_X]) return { isValid : false }; //switch to is space in between empty
@@ -202,9 +205,6 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
                         if (areSpacesBetweenEmpty(board, FROM_X, FROM_Y, rookX, FROM_Y) && 
                             rook === `${MOVING_PLAYER}-r`
                         ) {
-                            if (mode === 1) {
-                                board = cloneDeep(board);
-                            }
                             if (checkForCheck(board, MOVING_PLAYER)) return { isValid: false };
                             board[FROM_Y][FROM_X] = "";
                             board[FROM_Y][FROM_X + direction] = MOVING_PIECE;
@@ -212,7 +212,7 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
                             board[FROM_Y][FROM_X + direction] = "";
                             board[FROM_Y][TO_X - direction] = rook;
                             board[FROM_Y][rookX] = "";
-                            if (mode === 0)  extraGameState.castlingPossibility[MOVING_PLAYER].canKingCastle = false;
+                            extraGameState.castlingPossibility[MOVING_PLAYER].canKingCastle = false;
                             break;
                         }
                     }
@@ -240,15 +240,13 @@ function validateMove(board : string[][], move: Move2D, extraGameState: ExtraGam
                 break;
 
         }
-
-        if (mode === 2) return { isValid: true };
-
-        if (checkForCheck(board, MOVING_PLAYER)) return { isValid: false };
+        
         if (mode === 1) return { isValid: true };
-
-        extraGameState.doublePawnMoveLastMove = newDoublePawnMoveLastMove;
         board[FROM_Y][FROM_X] = "";
         board[TO_Y][TO_X] = MOVING_PIECE;
+        if (checkForCheck(board, MOVING_PLAYER)) return { isValid: false };
+
+        extraGameState.doublePawnMoveLastMove = newDoublePawnMoveLastMove;
 
         return {
             isValid: true,
@@ -295,6 +293,12 @@ function updateRookCastlingPossibility(x: number, y: number, castlingPossibility
             break;
         }
 }
+
+function capitalise (s) {
+  if (typeof s !== 'string') return ''
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
 
 interface ExtraGameState {
     doublePawnMoveLastMove: number,

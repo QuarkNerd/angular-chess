@@ -8,5 +8,6 @@ export interface Move {
 export interface Game {
     name: string;
     boards: Board[];
+    text: string;
     giveNextMove(move: Move): void; 
 }
